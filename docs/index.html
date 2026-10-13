@@ -1,0 +1,1210 @@
+<title>RAG Chunking Grid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: instrument panel — a sticky filter rail over a two-column figure grid that folds to one column at phone width */
+:root{
+  --plane:#f9f9f7;
+  --surface-1:#fcfcfb;
+  --ink:#0b0b0b;
+  --ink-2:#52514e;
+  --ink-3:#898781;
+  --grid:#e1e0d9;
+  --axis:#c3c2b7;
+  --hair:rgba(11,11,11,0.10);
+  --hair-strong:rgba(11,11,11,0.18);
+  --wash:rgba(42,120,214,0.07);
+  --s1:#2a78d6;
+  --s2:#eb6834;
+  --dim:#b9b8b1;
+  --neutral:#f0efec;
+  --good:#0ca30c;
+  --warning:#fab219;
+  --critical:#d03b3b;
+  --pole-pos:#2a78d6;
+  --pole-neg:#d03b3b;
+  --q0:#cde2fb; --q1:#9ec5f4; --q2:#6da7ec; --q3:#3987e5; --q4:#256abf; --q5:#104281;
+  --q0-on:#0b0b0b; --q1-on:#0b0b0b; --q2-on:#0b0b0b; --q3-on:#0b0b0b; --q4-on:#ffffff; --q5-on:#ffffff;
+  --font-ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --plane:#0d0d0d;
+    --surface-1:#1a1a19;
+    --ink:#ffffff;
+    --ink-2:#c3c2b7;
+    --ink-3:#898781;
+    --grid:#2c2c2a;
+    --axis:#383835;
+    --hair:rgba(255,255,255,0.10);
+    --hair-strong:rgba(255,255,255,0.20);
+    --wash:rgba(57,135,229,0.12);
+    --s1:#3987e5;
+    --s2:#d95926;
+    --dim:#5c5b56;
+    --neutral:#383835;
+    --pole-pos:#3987e5;
+    --pole-neg:#d03b3b;
+    --q0:#0d366b; --q1:#184f95; --q2:#256abf; --q3:#3987e5; --q4:#86b6ef; --q5:#cde2fb;
+    --q0-on:#ffffff; --q1-on:#ffffff; --q2-on:#ffffff; --q3-on:#0b0b0b; --q4-on:#0b0b0b; --q5-on:#0b0b0b;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --plane:#0d0d0d;
+  --surface-1:#1a1a19;
+  --ink:#ffffff;
+  --ink-2:#c3c2b7;
+  --ink-3:#898781;
+  --grid:#2c2c2a;
+  --axis:#383835;
+  --hair:rgba(255,255,255,0.10);
+  --hair-strong:rgba(255,255,255,0.20);
+  --wash:rgba(57,135,229,0.12);
+  --s1:#3987e5;
+  --s2:#d95926;
+  --dim:#5c5b56;
+  --neutral:#383835;
+  --pole-pos:#3987e5;
+  --pole-neg:#d03b3b;
+  --q0:#0d366b; --q1:#184f95; --q2:#256abf; --q3:#3987e5; --q4:#86b6ef; --q5:#cde2fb;
+  --q0-on:#ffffff; --q1-on:#ffffff; --q2-on:#ffffff; --q3-on:#0b0b0b; --q4-on:#0b0b0b; --q5-on:#0b0b0b;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--plane);color:var(--ink);
+  font-family:var(--font-ui);font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:28px 56px}
+
+/* ---- masthead ---- */
+.mast{display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px 28px;padding-bottom:18px;border-bottom:1px solid var(--hair-strong)}
+.mast h1{
+  margin:0;font-size:clamp(22px,3.4vw,30px);font-weight:600;letter-spacing:-0.015em;
+  text-wrap:balance;line-height:1.15;
+}
+.mast .lede{margin:6px 0 0;color:var(--ink-2);max-width:62ch;font-size:14px}
+.prov{
+  font-family:var(--font-mono);font-size:11px;line-height:1.7;color:var(--ink-3);
+  margin-left:auto;text-align:right;min-width:0;
+}
+.prov b{color:var(--ink-2);font-weight:500}
+@media (max-width:720px){.prov{margin-left:0;text-align:left}}
+
+/* ---- filter rail ---- */
+.rail{
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:30;
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;
+  margin:0 -20px;padding:12px 20px;
+  background:color-mix(in srgb,var(--plane) 92%,transparent);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--hair);
+}
+.fgroup{display:flex;align-items:center;gap:8px;min-width:0}
+.flabel{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:0.09em;text-transform:uppercase;
+  color:var(--ink-3);white-space:nowrap;
+}
+.seg{display:flex;border:1px solid var(--hair-strong);border-radius:7px;overflow:hidden;background:var(--surface-1)}
+.seg button{
+  appearance:none;border:0;background:transparent;color:var(--ink-2);
+  font-family:var(--font-ui);font-size:12.5px;font-weight:500;
+  padding:5px 11px;cursor:pointer;white-space:nowrap;
+  border-left:1px solid var(--hair);
+}
+.seg button:first-child{border-left:0}
+.seg button:hover{background:var(--wash);color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--plane)}
+.seg button:focus-visible{outline:2px solid var(--s1);outline-offset:-2px}
+.chk{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-2);cursor:pointer;white-space:nowrap}
+.chk input{accent-color:var(--s1);width:15px;height:15px;cursor:pointer;margin:0}
+
+/* ---- headline block ---- */
+.headline{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,2fr);gap:14px;margin-top:22px}
+@media (max-width:860px){.headline{grid-template-columns:1fr}}
+.hero{
+  background:var(--surface-1);border:1px solid var(--hair);border-radius:12px;
+  padding:20px 22px;display:flex;flex-direction:column;justify-content:center;min-width:0;
+}
+.hero .cap{font-family:var(--font-mono);font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:var(--ink-3)}
+.hero .fig{font-size:clamp(44px,7vw,60px);font-weight:600;letter-spacing:-0.03em;line-height:1;margin:10px 0 0}
+.hero .band{font-family:var(--font-mono);font-size:12px;color:var(--ink-2);margin-top:8px}
+.hero .cfg{font-size:13px;color:var(--ink-2);margin-top:10px;padding-top:10px;border-top:1px solid var(--hair)}
+.hero .cfg b{font-family:var(--font-mono);font-weight:500;color:var(--ink)}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:860px){.tiles{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}}
+.tile{
+  background:var(--surface-1);border:1px solid var(--hair);border-radius:12px;
+  padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0;
+}
+.tile .lab{font-size:12px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.tile .val{font-size:26px;font-weight:600;letter-spacing:-0.02em;line-height:1.1}
+.tile .sub{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-3);line-height:1.5;margin-top:2px}
+.key{width:9px;height:9px;border-radius:2px;flex:0 0 auto}
+.key.line{width:13px;height:2.5px;border-radius:2px}
+
+/* ---- figure grid ---- */
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
+.grid .span2{grid-column:1/-1}
+@media (max-width:860px){.grid{grid-template-columns:1fr}.grid .span2{grid-column:auto}}
+figure.card{
+  margin:0;background:var(--surface-1);border:1px solid var(--hair);border-radius:12px;
+  padding:16px 18px 18px;min-width:0;display:flex;flex-direction:column;
+}
+figure.card figcaption{margin:0 0 2px}
+.ctitle{font-size:14.5px;font-weight:600;letter-spacing:-0.005em}
+.csub{font-size:12.5px;color:var(--ink-2);margin-top:3px;max-width:68ch}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:11px 0 2px}
+.legend .item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-2)}
+.plotbox{margin-top:8px;min-width:0}
+.plotbox svg{display:block;width:100%;height:auto;overflow:visible}
+.scalebar{display:flex;align-items:center;gap:8px;margin-top:12px;font-family:var(--font-mono);font-size:10.5px;color:var(--ink-3)}
+.scalebar .ramp{display:flex;gap:2px}
+.scalebar .ramp i{width:22px;height:9px;border-radius:1px}
+.note{
+  font-size:12px;color:var(--ink-2);margin-top:12px;padding-top:11px;
+  border-top:1px solid var(--hair);display:flex;gap:9px;align-items:flex-start;
+}
+.note svg{flex:0 0 auto;margin-top:2px}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+
+/* ---- findings ---- */
+.findings{margin-top:34px}
+.h2{font-size:17px;font-weight:600;letter-spacing:-0.01em;margin:0 0 3px}
+.h2sub{font-size:13px;color:var(--ink-2);margin:0 0 16px}
+.flist{display:grid;grid-template-columns:repeat(auto-fit,minmax(272px,1fr));gap:14px;margin:0;padding:0;list-style:none}
+.flist li{
+  background:var(--surface-1);border:1px solid var(--hair);border-radius:12px;padding:15px 17px;min-width:0;
+  border-top:3px solid var(--s1);
+}
+.flist li.warn{border-top-color:var(--warning)}
+.flist li.crit{border-top-color:var(--critical)}
+.flist h3{margin:0 0 6px;font-size:13.5px;font-weight:600;letter-spacing:-0.005em}
+.flist p{margin:0;font-size:12.5px;color:var(--ink-2);line-height:1.6}
+.flist .num{
+  font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--ink);font-weight:500;
+}
+
+/* ---- integrity ---- */
+.integrity{
+  margin-top:14px;background:var(--surface-1);border:1px solid var(--hair);border-radius:12px;
+  border-left:3px solid var(--critical);padding:16px 18px;
+}
+.badge{
+  display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;
+  letter-spacing:0.08em;text-transform:uppercase;color:var(--critical);
+  border:1px solid currentColor;border-radius:4px;padding:2px 6px;
+}
+.integrity p{font-size:12.5px;color:var(--ink-2);margin:10px 0 0;max-width:80ch;line-height:1.6}
+
+/* ---- table ---- */
+.tablewrap{margin-top:14px;background:var(--surface-1);border:1px solid var(--hair);border-radius:12px;padding:16px 18px 6px;min-width:0}
+.scroller{overflow:auto;max-height:min(62vh,580px);margin-top:12px;min-width:0}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{text-align:right;padding:6px 9px;white-space:nowrap;border-bottom:1px solid var(--hair)}
+th:first-child,td:first-child{text-align:left}
+thead th{
+  position:sticky;top:0;background:var(--surface-1);z-index:1;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:500;cursor:pointer;user-select:none;border-bottom:1px solid var(--axis);
+}
+thead th:hover{color:var(--ink)}
+thead th[aria-sort] {color:var(--ink)}
+thead th .arrow{opacity:.55;font-size:9px}
+tbody td{font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--ink-2)}
+tbody td.k{font-family:var(--font-ui);color:var(--ink)}
+tbody tr:hover td{background:var(--wash)}
+tbody tr.sup td{color:var(--ink-3)}
+tbody tr.best td{background:var(--wash)}
+.runpill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px}
+.strike{text-decoration:line-through;text-decoration-color:var(--critical);text-decoration-thickness:1px}
+.tfoot{font-size:11.5px;color:var(--ink-3);padding:10px 0 12px;line-height:1.6}
+
+/* ---- tooltip ---- */
+#tip{
+  position:fixed;z-index:80;pointer-events:none;opacity:0;
+  background:var(--surface-1);border:1px solid var(--hair-strong);border-radius:8px;
+  box-shadow:0 6px 20px rgba(0,0,0,.14),0 1px 2px rgba(0,0,0,.08);
+  padding:8px 10px;min-width:124px;max-width:250px;
+  transition:opacity .08s linear;
+}
+#tip .tt{font-family:var(--font-mono);font-size:10px;letter-spacing:0.07em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
+#tip .tr{display:flex;align-items:baseline;gap:8px;margin-top:3px}
+#tip .tr .tv{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:13px;font-weight:600;color:var(--ink);margin-left:auto}
+#tip .tr .tl{font-size:11.5px;color:var(--ink-2)}
+#tip .tn{font-size:10.5px;color:var(--ink-3);margin-top:6px;padding-top:5px;border-top:1px solid var(--hair);line-height:1.45}
+.hit{fill:transparent;cursor:crosshair}
+.cell{cursor:pointer}
+.cell:focus-visible,.bar:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+[tabindex]:focus-visible{outline:2px solid var(--s1);outline-offset:2px;border-radius:3px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+
+  <header class="mast">
+    <div style="min-width:0">
+      <h1>RAG Chunking Grid</h1>
+      <p class="lede">A chunk-size and overlap sweep over SQuAD retrieval, read with the confidence intervals that 200 queries actually support. Two retrievers, one scale, no dual axes.</p>
+    </div>
+    <div class="prov">
+      <b>200</b> SQuAD validation Q&amp;A · seed 42<br>
+      top-K <b>3</b> · relevance = verbatim answer span<br>
+      5 chunk sizes × 3 overlaps × 2 retrievers = <b>30</b> scored runs<br>
+      <b>15</b> superseded rows retained, charted nowhere
+    </div>
+  </header>
+
+  <div class="rail" role="group" aria-label="Filters applied to every figure and table below">
+    <div class="fgroup">
+      <span class="flabel" id="lab-metric">Metric</span>
+      <div class="seg" role="group" aria-labelledby="lab-metric">
+        <button type="button" data-metric="hit" aria-pressed="true">Hit Rate@3</button>
+        <button type="button" data-metric="mrr" aria-pressed="false">MRR@3</button>
+      </div>
+    </div>
+    <div class="fgroup">
+      <span class="flabel" id="lab-ov">Overlap</span>
+      <div class="seg" role="group" aria-labelledby="lab-ov">
+        <button type="button" data-ov="all" aria-pressed="true">All</button>
+        <button type="button" data-ov="0" aria-pressed="false">0%</button>
+        <button type="button" data-ov="0.1" aria-pressed="false">10%</button>
+        <button type="button" data-ov="0.2" aria-pressed="false">20%</button>
+      </div>
+    </div>
+    <label class="chk" for="ci-toggle">
+      <input type="checkbox" id="ci-toggle" checked>
+      95% interval (Wilson, n=200)
+    </label>
+  </div>
+
+  <section class="headline">
+    <div class="hero">
+      <span class="cap" id="hero-cap">Best Hit Rate@3</span>
+      <p class="fig" id="hero-fig">95.0%</p>
+      <div class="band mono" id="hero-band">95% CI 91.0 – 97.3%</div>
+      <div class="cfg" id="hero-cfg"></div>
+    </div>
+    <div class="tiles" id="tiles"></div>
+  </section>
+
+  <div class="grid">
+
+    <figure class="card span2">
+      <figcaption>
+        <div class="ctitle">Retrieval quality against chunk size</div>
+        <div class="csub" id="qual-sub"></div>
+      </figcaption>
+      <div class="legend" id="qual-legend"></div>
+      <div class="plotbox" id="qual"></div>
+      <div class="note">
+        <svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5.6" fill="none" stroke="var(--ink-3)" stroke-width="1.2"/><path d="M6.5 3.6v.1M6.5 5.7v3.7" stroke="var(--ink-3)" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span>The shaded span to the right is not a plateau the retrievers found — it is where the <em>test</em> stops varying. From 1024 tokens up, every SQuAD context fits in a single chunk, so the index is byte-identical at 1024 and 2048 and so is every metric.</span>
+      </div>
+    </figure>
+
+    <figure class="card span2">
+      <figcaption>
+        <div class="ctitle">The full grid, both retrievers</div>
+        <div class="csub" id="hm-sub"></div>
+      </figcaption>
+      <div class="plotbox" id="hm"></div>
+      <div class="scalebar" id="hm-scale"></div>
+    </figure>
+
+    <figure class="card span2">
+      <figcaption>
+        <div class="ctitle">Embeddings minus TF-IDF, by metric</div>
+        <div class="csub">Same comparison, same 200 questions, opposite signs. Embeddings retrieve the answer chunk more often and then rank it lower. Averaged over the three overlap settings; the spread across overlaps never exceeds 1.0pp.</div>
+      </figcaption>
+      <div class="plotbox" id="delta"></div>
+      <div class="note">
+        <svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5.6" fill="none" stroke="var(--ink-3)" stroke-width="1.2"/><path d="M6.5 3.6v.1M6.5 5.7v3.7" stroke="var(--ink-3)" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span>Hit Rate@3 asks whether the answer is in the top 3 at all; MRR@3 asks where. A retriever can win the first question and lose the second, and this one does: <span class="mono">11 of 15</span> configurations move in opposite directions.</span>
+      </div>
+    </figure>
+
+    <figure class="card">
+      <figcaption>
+        <div class="ctitle">Chunks per document</div>
+        <div class="csub">The confound behind the plateau. Mean over the three overlap settings.</div>
+      </figcaption>
+      <div class="legend" id="cpd-legend"></div>
+      <div class="plotbox" id="cpd"></div>
+    </figure>
+
+    <figure class="card">
+      <figcaption>
+        <div class="ctitle">Query latency against chunk size</div>
+        <div class="csub">Milliseconds per query: the line is the mean, the wash runs out to p95. Its own chart, not a second axis on the one above.</div>
+      </figcaption>
+      <div class="legend" id="lat-legend"></div>
+      <div class="plotbox" id="lat"></div>
+    </figure>
+
+  </div>
+
+  <section class="findings">
+    <h2 class="h2">What the numbers support</h2>
+    <p class="h2sub">Five readings, each tied to a figure above and to a column in the table below.</p>
+    <ul class="flist">
+      <li class="warn">
+        <h3>1024 and 2048 tokens are one experiment, not two</h3>
+        <p>Hit rate, MRR, chunk count and index size are <span class="num">identical</span> at both sizes in both retrievers, because SQuAD contexts fit in a single chunk from 1024 up (<span class="num">1.000</span> chunks/doc). The sweep has four distinct points, and nothing in it speaks to 2048.</p>
+      </li>
+      <li>
+        <h3>Embeddings find more and rank worse</h3>
+        <p>Hit Rate@3 is higher at all 15 configurations (<span class="num">+2.0</span> to <span class="num">+6.0pp</span>), while MRR@3 is lower in <span class="num">11 of 15</span>. The hit-minus-MRR gap averages <span class="num">7.62pp</span> for embeddings against <span class="num">4.66pp</span> for TF-IDF.</p>
+      </li>
+      <li>
+        <h3>Overlap does nothing measurable here</h3>
+        <p>Holding chunk size fixed, the widest hit-rate spread between 0% and 20% overlap is <span class="num">1.0pp</span> in either retriever — two queries out of 200. The grid cannot tell these settings apart, so a 10% default is a free choice, not a finding.</p>
+      </li>
+      <li class="crit">
+        <h3>No two configurations are statistically separated</h3>
+        <p>At n=200 a 95% Wilson interval runs <span class="num">±3.1</span> to <span class="num">±4.7pp</span>. Every interval in the grid overlaps every other, the <span class="num">92.5%</span>/<span class="num">95.0%</span> headline pair included. These are unpaired intervals and both retrievers answered the same questions, so McNemar on per-query outcomes would resolve far more — but per-query results were never saved, so it cannot be run from these files.</p>
+      </li>
+      <li>
+        <h3>Cost is the one clean separation</h3>
+        <p>Embeddings take <span class="num">5.3×</span> longer to build the index (<span class="num">0.449 s</span> against <span class="num">0.085 s</span>) and <span class="num">38%</span> less time per query (<span class="num">0.99 ms</span> against <span class="num">1.59 ms</span>). TF-IDF query time tracks index size; the embedding retriever's does not.</p>
+      </li>
+    </ul>
+  </section>
+
+  <section class="integrity">
+    <span class="badge">
+      <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.2 11 10.8H1z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M6 4.8v2.4M6 8.9v.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Superseded run excluded
+    </span>
+    <p><span class="mono">results.csv</span> holds an earlier TF-IDF pass. It is kept in the repository and charted nowhere here, on two measurements: Hit Rate@3 and MRR@3 are identical in <span class="mono">15 of 15</span> rows, which requires every hit to land at rank 1; and <span class="mono">9 of 15</span> rows read exactly <span class="mono">1.000</span>. The re-run in <span class="mono">_run_tfidf_clean.py</span> rebuilt chunking on LangChain's <span class="mono">RecursiveCharacterTextSplitter</span> and scores <span class="mono">0.925</span> where the old pass read <span class="mono">1.000</span>. Its rows stay in the table below, struck through, so the record is complete rather than quietly tidied.</p>
+  </section>
+
+  <section class="tablewrap">
+    <div class="ctitle">Every run, every column</div>
+    <div class="csub">The table view each figure above resolves to. Click a header to sort; the overlap filter applies here too.</div>
+    <div class="scroller">
+      <table id="tbl">
+        <thead><tr id="thead-row"></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <p class="tfoot" id="tfoot"></p>
+  </section>
+
+</div>
+<div id="tip" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ─── data ─────────────────────────────────────────────────────────────────── */
+const DATA = {"meta":{"n":200,"topk":3,"runs":{"tfidf":{"label":"TF-IDF","method":"TF-IDF bigrams + cosine","valid":true},"emb":{"label":"Embeddings","method":"all-MiniLM-L6-v2 + ChromaDB","valid":true},"v1":{"label":"TF-IDF v1","method":"superseded","valid":false}},"sizes":[128,256,512,1024,2048],"overlaps":[0,0.1,0.2]},"rows":[
+{"run":"tfidf","cs":128,"ov":0,"ovt":0,"hit":0.87,"mrr":0.821667,"lat":1.799,"p95":2.505,"cpd":2.22,"tc":444,"build":0.0904},
+{"run":"tfidf","cs":128,"ov":0.1,"ovt":12,"hit":0.87,"mrr":0.821667,"lat":1.702,"p95":2.296,"cpd":2.22,"tc":444,"build":0.0915},
+{"run":"tfidf","cs":128,"ov":0.2,"ovt":25,"hit":0.87,"mrr":0.819167,"lat":1.783,"p95":2.588,"cpd":2.26,"tc":452,"build":0.0923},
+{"run":"tfidf","cs":256,"ov":0,"ovt":0,"hit":0.91,"mrr":0.858333,"lat":1.763,"p95":2.374,"cpd":1.19,"tc":238,"build":0.0907},
+{"run":"tfidf","cs":256,"ov":0.1,"ovt":25,"hit":0.915,"mrr":0.865833,"lat":1.767,"p95":2.394,"cpd":1.19,"tc":238,"build":0.0916},
+{"run":"tfidf","cs":256,"ov":0.2,"ovt":51,"hit":0.91,"mrr":0.865,"lat":1.685,"p95":2.331,"cpd":1.19,"tc":238,"build":0.0952},
+{"run":"tfidf","cs":512,"ov":0,"ovt":0,"hit":0.92,"mrr":0.874167,"lat":1.831,"p95":2.5,"cpd":1.015,"tc":203,"build":0.0917},
+{"run":"tfidf","cs":512,"ov":0.1,"ovt":51,"hit":0.915,"mrr":0.875833,"lat":1.752,"p95":2.319,"cpd":1.015,"tc":203,"build":0.0959},
+{"run":"tfidf","cs":512,"ov":0.2,"ovt":102,"hit":0.925,"mrr":0.879167,"lat":1.764,"p95":2.441,"cpd":1.015,"tc":203,"build":0.0964},
+{"run":"tfidf","cs":1024,"ov":0,"ovt":0,"hit":0.925,"mrr":0.879167,"lat":1.554,"p95":2.315,"cpd":1,"tc":200,"build":0.0859},
+{"run":"tfidf","cs":1024,"ov":0.1,"ovt":102,"hit":0.925,"mrr":0.879167,"lat":1.344,"p95":1.855,"cpd":1,"tc":200,"build":0.0709},
+{"run":"tfidf","cs":1024,"ov":0.2,"ovt":204,"hit":0.925,"mrr":0.879167,"lat":1.284,"p95":1.92,"cpd":1,"tc":200,"build":0.0727},
+{"run":"tfidf","cs":2048,"ov":0,"ovt":0,"hit":0.925,"mrr":0.879167,"lat":1.233,"p95":1.591,"cpd":1,"tc":200,"build":0.0657},
+{"run":"tfidf","cs":2048,"ov":0.1,"ovt":204,"hit":0.925,"mrr":0.879167,"lat":1.294,"p95":1.713,"cpd":1,"tc":200,"build":0.0655},
+{"run":"tfidf","cs":2048,"ov":0.2,"ovt":409,"hit":0.925,"mrr":0.879167,"lat":1.339,"p95":1.917,"cpd":1,"tc":200,"build":0.0765},
+{"run":"emb","cs":128,"ov":0,"ovt":0,"hit":0.93,"mrr":0.845833,"lat":1.0794,"p95":1.2182,"cpd":2.165,"tc":433,"build":0.8164},
+{"run":"emb","cs":128,"ov":0.1,"ovt":12,"hit":0.92,"mrr":0.835833,"lat":1.0608,"p95":1.2151,"cpd":2.26,"tc":452,"build":0.5977},
+{"run":"emb","cs":128,"ov":0.2,"ovt":25,"hit":0.925,"mrr":0.8525,"lat":1.0726,"p95":1.2473,"cpd":2.385,"tc":477,"build":0.6272},
+{"run":"emb","cs":256,"ov":0,"ovt":0,"hit":0.93,"mrr":0.858333,"lat":1.0497,"p95":1.2348,"cpd":1.19,"tc":238,"build":0.4223},
+{"run":"emb","cs":256,"ov":0.1,"ovt":25,"hit":0.935,"mrr":0.851667,"lat":0.9549,"p95":1.0934,"cpd":1.19,"tc":238,"build":0.4656},
+{"run":"emb","cs":256,"ov":0.2,"ovt":51,"hit":0.93,"mrr":0.853333,"lat":0.9774,"p95":1.1095,"cpd":1.2,"tc":240,"build":0.418},
+{"run":"emb","cs":512,"ov":0,"ovt":0,"hit":0.945,"mrr":0.871667,"lat":0.9547,"p95":1.1208,"cpd":1.015,"tc":203,"build":0.3911},
+{"run":"emb","cs":512,"ov":0.1,"ovt":51,"hit":0.95,"mrr":0.874167,"lat":0.9725,"p95":1.1426,"cpd":1.015,"tc":203,"build":0.3704},
+{"run":"emb","cs":512,"ov":0.2,"ovt":102,"hit":0.95,"mrr":0.868333,"lat":0.9535,"p95":1.081,"cpd":1.015,"tc":203,"build":0.3673},
+{"run":"emb","cs":1024,"ov":0,"ovt":0,"hit":0.945,"mrr":0.871667,"lat":0.961,"p95":1.1064,"cpd":1,"tc":200,"build":0.3831},
+{"run":"emb","cs":1024,"ov":0.1,"ovt":102,"hit":0.945,"mrr":0.871667,"lat":0.969,"p95":1.1251,"cpd":1,"tc":200,"build":0.3721},
+{"run":"emb","cs":1024,"ov":0.2,"ovt":204,"hit":0.945,"mrr":0.871667,"lat":0.9333,"p95":1.0834,"cpd":1,"tc":200,"build":0.3721},
+{"run":"emb","cs":2048,"ov":0,"ovt":0,"hit":0.945,"mrr":0.871667,"lat":0.9504,"p95":1.0868,"cpd":1,"tc":200,"build":0.3861},
+{"run":"emb","cs":2048,"ov":0.1,"ovt":204,"hit":0.945,"mrr":0.871667,"lat":0.9499,"p95":1.1129,"cpd":1,"tc":200,"build":0.3652},
+{"run":"emb","cs":2048,"ov":0.2,"ovt":409,"hit":0.945,"mrr":0.871667,"lat":0.9485,"p95":1.0964,"cpd":1,"tc":200,"build":0.3859},
+{"run":"v1","cs":128,"ov":0,"ovt":0,"hit":0.89,"mrr":0.89,"lat":2.3,"p95":3.1,"cpd":3.31,"tc":662,"build":0.06},
+{"run":"v1","cs":128,"ov":0.1,"ovt":12,"hit":0.905,"mrr":0.905,"lat":2.2,"p95":2.8,"cpd":3.31,"tc":662,"build":0.06},
+{"run":"v1","cs":128,"ov":0.2,"ovt":25,"hit":0.925,"mrr":0.925,"lat":2.5,"p95":3.3,"cpd":3.69,"tc":738,"build":0.06},
+{"run":"v1","cs":256,"ov":0,"ovt":0,"hit":0.925,"mrr":0.925,"lat":2.4,"p95":3.2,"cpd":2,"tc":400,"build":0.06},
+{"run":"v1","cs":256,"ov":0.1,"ovt":25,"hit":0.91,"mrr":0.91,"lat":2.4,"p95":3.1,"cpd":2,"tc":400,"build":0.06},
+{"run":"v1","cs":256,"ov":0.2,"ovt":51,"hit":0.91,"mrr":0.91,"lat":2.3,"p95":2.9,"cpd":2,"tc":400,"build":0.06},
+{"run":"v1","cs":512,"ov":0,"ovt":0,"hit":1,"mrr":1,"lat":2.2,"p95":3,"cpd":1,"tc":200,"build":0.05},
+{"run":"v1","cs":512,"ov":0.1,"ovt":51,"hit":1,"mrr":1,"lat":2.1,"p95":2.8,"cpd":1,"tc":200,"build":0.05},
+{"run":"v1","cs":512,"ov":0.2,"ovt":102,"hit":1,"mrr":1,"lat":2.1,"p95":2.7,"cpd":1,"tc":200,"build":0.05},
+{"run":"v1","cs":1024,"ov":0,"ovt":0,"hit":1,"mrr":1,"lat":2,"p95":2.7,"cpd":1,"tc":200,"build":0.05},
+{"run":"v1","cs":1024,"ov":0.1,"ovt":102,"hit":1,"mrr":1,"lat":2,"p95":2.5,"cpd":1,"tc":200,"build":0.05},
+{"run":"v1","cs":1024,"ov":0.2,"ovt":204,"hit":1,"mrr":1,"lat":2.1,"p95":2.7,"cpd":1,"tc":200,"build":0.05},
+{"run":"v1","cs":2048,"ov":0,"ovt":0,"hit":1,"mrr":1,"lat":2.1,"p95":2.7,"cpd":1,"tc":200,"build":0.05},
+{"run":"v1","cs":2048,"ov":0.1,"ovt":204,"hit":1,"mrr":1,"lat":2.2,"p95":2.8,"cpd":1,"tc":200,"build":0.06},
+{"run":"v1","cs":2048,"ov":0.2,"ovt":409,"hit":1,"mrr":1,"lat":2,"p95":2.6,"cpd":1,"tc":200,"build":0.05}
+]};
+
+const N = DATA.meta.n;
+const SIZES = DATA.meta.sizes;
+const OVS = DATA.meta.overlaps;
+const RUNS = [
+  {id:"tfidf", label:"TF-IDF", color:"var(--s1)", method:"TF-IDF bigrams + cosine"},
+  {id:"emb",   label:"Embeddings", color:"var(--s2)", method:"all-MiniLM-L6-v2 + ChromaDB"}
+];
+const METRIC = {
+  hit:{key:"hit", label:"Hit Rate@3", short:"Hit Rate@3",
+       blurb:"Share of the 200 questions whose answer span appears in at least one of the top 3 chunks."},
+  mrr:{key:"mrr", label:"MRR@3", short:"MRR@3",
+       blurb:"Mean reciprocal rank of the first relevant chunk in the top 3, so a hit at rank 3 is worth one third of a hit at rank 1."}
+};
+
+/* ─── state ────────────────────────────────────────────────────────────────── */
+const state = {metric:"hit", ov:"all", ci:true, sortKey:"run", sortDir:1};
+try{
+  const s = JSON.parse(localStorage.getItem("ragGridView") || "null");
+  if(s && METRIC[s.metric]) state.metric = s.metric;
+  if(s && ["all","0","0.1","0.2"].indexOf(s.ov) >= 0) state.ov = s.ov;
+  if(s && typeof s.ci === "boolean") state.ci = s.ci;
+}catch(e){/* private window or blocked storage: defaults stand */}
+function persist(){
+  try{ localStorage.setItem("ragGridView", JSON.stringify({metric:state.metric, ov:state.ov, ci:state.ci})); }
+  catch(e){/* nothing to do; the page works without it */}
+}
+
+/* ─── helpers ──────────────────────────────────────────────────────────────── */
+const SVGNS = "http://www.w3.org/2000/svg";
+function sv(tag, attrs, text){
+  const n = document.createElementNS(SVGNS, tag);
+  if(attrs) for(const k in attrs){ if(attrs[k] !== null && attrs[k] !== undefined) n.setAttribute(k, attrs[k]); }
+  if(text !== undefined && text !== null) n.textContent = String(text);
+  return n;
+}
+function he(tag, cls, text){
+  const n = document.createElement(tag);
+  if(cls) n.className = cls;
+  if(text !== undefined && text !== null) n.textContent = String(text);
+  return n;
+}
+function wilson(p, n){
+  const z = 1.96, d = 1 + z*z/n, c = p + z*z/(2*n);
+  const m = z * Math.sqrt(p*(1-p)/n + z*z/(4*n*n));
+  return [(c-m)/d, (c+m)/d];
+}
+const pct  = (v, dp) => (v*100).toFixed(dp === undefined ? 1 : dp) + "%";
+const pp   = v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1) + "pp";
+const ovLab = v => Math.round(v*100) + "%";
+const mean = a => a.reduce((x,y) => x+y, 0) / a.length;
+
+function rowsFor(runId){
+  return DATA.rows.filter(r => r.run === runId && (state.ov === "all" || Math.abs(r.ov - +state.ov) < 1e-9));
+}
+/* value for a (run, size) under the current overlap filter: a single run, or the mean of three */
+function at(runId, cs, field){
+  const rs = rowsFor(runId).filter(r => r.cs === cs);
+  return rs.length ? mean(rs.map(r => r[field])) : null;
+}
+function allRowsFor(runId, cs, field){
+  return DATA.rows.filter(r => r.run === runId && r.cs === cs).map(r => r[field]);
+}
+function bestOf(runId, field){
+  const rs = rowsFor(runId);
+  return rs.reduce((b, r) => (r[field] > b[field] ? r : b), rs[0]);
+}
+function niceDomain(lo, hi, step){
+  const s = step || 0.02;
+  return [Math.floor(lo/s)*s, Math.ceil(hi/s)*s];
+}
+
+/* ─── tooltip ──────────────────────────────────────────────────────────────── */
+const tip = document.getElementById("tip");
+let tipOn = false;
+function showTip(spec, x, y){
+  tip.textContent = "";
+  if(spec.title) tip.appendChild(he("div","tt",spec.title));
+  (spec.rows||[]).forEach(r => {
+    const row = he("div","tr");
+    if(r.color){
+      const k = he("span", r.shape === "line" ? "key line" : "key");
+      k.style.background = r.color;
+      row.appendChild(k);
+    }
+    row.appendChild(he("span","tl",r.label));
+    row.appendChild(he("span","tv",r.value));
+    tip.appendChild(row);
+  });
+  if(spec.note) tip.appendChild(he("div","tn",spec.note));
+  tip.style.opacity = "1";
+  tipOn = true;
+  place(x, y);
+}
+function place(x, y){
+  const r = tip.getBoundingClientRect();
+  let L = x + 14, T = y - r.height - 12;
+  if(L + r.width > innerWidth - 10) L = x - r.width - 14;
+  if(L < 10) L = 10;
+  if(T < 10) T = y + 18;
+  if(T + r.height > innerHeight - 10) T = innerHeight - r.height - 10;
+  tip.style.left = L + "px";
+  tip.style.top  = T + "px";
+}
+function hideTip(){ tip.style.opacity = "0"; tipOn = false; }
+function bindTip(node, specFn){
+  const enter = ev => {
+    const b = node.getBoundingClientRect();
+    const x = ev && ev.clientX ? ev.clientX : b.left + b.width/2;
+    const y = ev && ev.clientY ? ev.clientY : b.top;
+    showTip(specFn(), x, y);
+  };
+  node.addEventListener("pointerenter", enter);
+  node.addEventListener("pointermove", ev => { if(tipOn) place(ev.clientX, ev.clientY); });
+  node.addEventListener("pointerleave", hideTip);
+  node.addEventListener("focus", enter);
+  node.addEventListener("blur", hideTip);
+}
+addEventListener("scroll", hideTip, {passive:true});
+document.querySelectorAll(".scroller").forEach(function(n){ n.addEventListener("scroll", hideTip, {passive:true}); });
+
+/* ─── axis furniture ───────────────────────────────────────────────────────── */
+function yAxis(g, p, dom, ticks, fmt){
+  ticks.forEach(t => {
+    const y = p.scaleY(t, dom);
+    g.appendChild(sv("line",{x1:p.m.l, x2:p.W-p.m.r, y1:y, y2:y, stroke:"var(--grid)", "stroke-width":1}));
+    g.appendChild(sv("text",{x:p.m.l-9, y:y+3.5, "text-anchor":"end", fill:"var(--ink-3)",
+      "font-size":10.5, "font-family":"var(--font-mono)", "font-variant-numeric":"tabular-nums"}, fmt(t)));
+  });
+}
+function xTicks(g, p, labels, xs, title){
+  g.appendChild(sv("line",{x1:p.m.l, x2:p.W-p.m.r, y1:p.y0, y2:p.y0, stroke:"var(--axis)", "stroke-width":1}));
+  labels.forEach((lb, i) => {
+    g.appendChild(sv("text",{x:xs[i], y:p.y0+17, "text-anchor":"middle", fill:"var(--ink-3)",
+      "font-size":10.5, "font-family":"var(--font-mono)", "font-variant-numeric":"tabular-nums"}, lb));
+  });
+  if(title){
+    g.appendChild(sv("text",{x:(p.m.l+p.W-p.m.r)/2, y:p.y0+34, "text-anchor":"middle", fill:"var(--ink-3)",
+      "font-size":10, "font-family":"var(--font-mono)", "letter-spacing":"0.07em"}, title));
+  }
+}
+/* column/bar with a 4px rounded data end and a square baseline end */
+function barPath(x, y, w, h, r, dir){
+  const rr = Math.min(r, w/2, Math.abs(h));
+  if(dir === "up"){   // grows upward from y+h
+    return "M"+x+" "+(y+h)+"V"+(y+rr)+"a"+rr+" "+rr+" 0 0 1 "+rr+" "+(-rr)+"h"+(w-2*rr)+"a"+rr+" "+rr+" 0 0 1 "+rr+" "+rr+"V"+(y+h)+"Z";
+  }
+  if(dir === "right"){ // grows right from x
+    return "M"+x+" "+y+"h"+(w-rr)+"a"+rr+" "+rr+" 0 0 1 "+rr+" "+rr+"v"+(h-2*rr)+"a"+rr+" "+rr+" 0 0 1 "+(-rr)+" "+rr+"H"+x+"Z";
+  }
+  // left
+  return "M"+(x+w)+" "+y+"H"+(x+rr)+"a"+rr+" "+rr+" 0 0 0 "+(-rr)+" "+rr+"v"+(h-2*rr)+"a"+rr+" "+rr+" 0 0 0 "+rr+" "+rr+"h"+(w-rr)+"Z";
+}
+function frame(host, H, m){
+  const W = Math.max(280, host.clientWidth || 600);
+  const p = {W:W, H:H, m:m, y0:H-m.b};
+  p.x = f => m.l + f*(W - m.l - m.r);
+  p.y = f => m.t + (1-f)*(H - m.t - m.b);
+  const svg = sv("svg",{viewBox:"0 0 "+W+" "+H, width:W, height:H, role:"img"});
+  p.svg = svg;
+  p.scaleY = (v, dom) => p.y((v-dom[0])/(dom[1]-dom[0]));
+  return p;
+}
+function legendInto(host, items){
+  host.textContent = "";
+  items.forEach(it => {
+    const d = he("span","item");
+    const k = he("span", it.shape === "line" ? "key line" : "key");
+    k.style.background = it.color;
+    d.appendChild(k);
+    d.appendChild(he("span", null, it.label));
+    host.appendChild(d);
+  });
+}
+
+/* ─── figure 1: quality vs chunk size ──────────────────────────────────────── */
+function drawQuality(){
+  const host = document.getElementById("qual");
+  const M = METRIC[state.metric];
+  document.getElementById("qual-sub").textContent =
+    M.blurb + " " + (state.ov === "all"
+      ? "Averaged over the three overlap settings."
+      : "Overlap fixed at " + ovLab(+state.ov) + ".");
+  legendInto(document.getElementById("qual-legend"),
+    RUNS.map(r => ({label:r.label + " — " + r.method, color:r.color, shape:"line"}))
+      .concat(state.ci ? [{label:"95% Wilson interval, n=200", color:"var(--dim)"}] : []));
+
+  host.textContent = "";
+  const narrow = (host.clientWidth || 600) < 520;
+  const p = frame(host, narrow ? 300 : 330, {t:14, r:narrow ? 56 : 74, b:44, l:46});
+  const svg = p.svg;
+
+  // domain over plotted values, widened by the interval when shown
+  let lo = 1, hi = 0;
+  RUNS.forEach(r => SIZES.forEach(cs => {
+    const v = at(r.id, cs, M.key);
+    lo = Math.min(lo, v); hi = Math.max(hi, v);
+    if(state.ci){ const c = wilson(v, N); lo = Math.min(lo, c[0]); hi = Math.max(hi, c[1]); }
+  }));
+  const dom = niceDomain(lo - 0.005, Math.min(1, hi + 0.005), 0.02);
+  const xs = SIZES.map((_, i) => p.x(SIZES.length === 1 ? 0.5 : i/(SIZES.length-1)));
+
+  // saturation span: from midway between 512 and 1024 to the plot edge
+  const satFrom = (xs[2] + xs[3]) / 2;
+  svg.appendChild(sv("rect",{x:satFrom, y:p.m.t, width:(p.W-p.m.r)-satFrom, height:p.H-p.m.t-p.m.b,
+    fill:"var(--ink-3)", opacity:0.055}));
+  svg.appendChild(sv("line",{x1:satFrom, x2:satFrom, y1:p.m.t, y2:p.y0, stroke:"var(--axis)", "stroke-width":1}));
+  svg.appendChild(sv("text",{x:satFrom+7, y:p.m.t+11, fill:"var(--ink-3)", "font-size":10,
+    "font-family":"var(--font-mono)"}, narrow ? "1 chunk/doc" : "1 chunk/doc — index identical"));
+
+  const ticks = []; for(let t = dom[0]; t <= dom[1] + 1e-9; t += 0.02) ticks.push(+t.toFixed(4));
+  yAxis(svg, p, dom, ticks, t => (t*100).toFixed(0) + "%");
+
+  // interval bands first, so the lines sit on top
+  if(state.ci){
+    RUNS.forEach(r => {
+      const up = [], dn = [];
+      SIZES.forEach((cs, i) => {
+        const c = wilson(at(r.id, cs, M.key), N);
+        up.push([xs[i], p.scaleY(c[1], dom)]);
+        dn.push([xs[i], p.scaleY(c[0], dom)]);
+      });
+      const d = "M" + up.map(q => q[0]+" "+q[1]).join("L") + "L" + dn.reverse().map(q => q[0]+" "+q[1]).join("L") + "Z";
+      svg.appendChild(sv("path",{d:d, fill:r.color, opacity:0.10}));
+    });
+  }
+
+  RUNS.forEach(r => {
+    const pts = SIZES.map((cs, i) => [xs[i], p.scaleY(at(r.id, cs, M.key), dom)]);
+    svg.appendChild(sv("path",{d:"M"+pts.map(q => q[0]+" "+q[1]).join("L"),
+      fill:"none", stroke:r.color, "stroke-width":2, "stroke-linejoin":"round", "stroke-linecap":"round"}));
+    pts.forEach(q => {
+      svg.appendChild(sv("circle",{cx:q[0], cy:q[1], r:4.5, fill:r.color,
+        stroke:"var(--surface-1)", "stroke-width":2}));
+    });
+    // direct end label
+    const last = pts[pts.length-1], v = at(r.id, SIZES[SIZES.length-1], M.key);
+    svg.appendChild(sv("text",{x:last[0]+11, y:last[1]+3.5, fill:"var(--ink)", "font-size":11.5,
+      "font-weight":600, "font-family":"var(--font-mono)", "font-variant-numeric":"tabular-nums"},
+      state.metric === "hit" ? pct(v) : v.toFixed(3)));
+  });
+
+  xTicks(svg, p, SIZES.map(String), xs, "chunk size (tokens)");
+
+  // crosshair + one tooltip listing both series
+  const cross = sv("line",{x1:0, x2:0, y1:p.m.t, y2:p.y0, stroke:"var(--ink-3)", "stroke-width":1, opacity:0});
+  svg.appendChild(cross);
+  const hit = sv("rect",{x:p.m.l, y:p.m.t, width:(p.W-p.m.r)-p.m.l, height:p.H-p.m.t-p.m.b, class:"hit", tabindex:0,
+    "aria-label":"Quality by chunk size. Arrow keys step through chunk sizes."});
+  svg.appendChild(hit);
+  let idx = 0;
+  function focusIdx(i, cx, cy){
+    idx = Math.max(0, Math.min(SIZES.length-1, i));
+    cross.setAttribute("x1", xs[idx]); cross.setAttribute("x2", xs[idx]); cross.setAttribute("opacity", 1);
+    const cs = SIZES[idx];
+    const rows = RUNS.map(r => {
+      const v = at(r.id, cs, M.key), c = wilson(v, N);
+      return {color:r.color, shape:"line", label:r.label,
+        value:(state.metric === "hit" ? pct(v) : v.toFixed(3)) + "  [" + (c[0]*100).toFixed(1) + "–" + (c[1]*100).toFixed(1) + "]"};
+    });
+    const cpd = at("tfidf", cs, "cpd");
+    showTip({title:cs + " tokens · " + M.short, rows:rows,
+      note:cpd <= 1.0001 ? "1.000 chunks/doc — one chunk per document, so the index no longer changes with size."
+                         : cpd.toFixed(3) + " chunks/doc"}, cx, cy);
+  }
+  hit.addEventListener("pointermove", ev => {
+    const r = p.svg.getBoundingClientRect();
+    const sx = (ev.clientX - r.left) * (p.W / r.width);
+    let best = 0, bd = Infinity;
+    xs.forEach((x, i) => { const d = Math.abs(x - sx); if(d < bd){ bd = d; best = i; } });
+    focusIdx(best, ev.clientX, ev.clientY);
+  });
+  hit.addEventListener("pointerleave", () => { cross.setAttribute("opacity", 0); hideTip(); });
+  hit.addEventListener("focus", () => focusIdx(idx));
+  hit.addEventListener("blur", () => { cross.setAttribute("opacity", 0); hideTip(); });
+  hit.addEventListener("keydown", ev => {
+    if(ev.key === "ArrowRight" || ev.key === "ArrowLeft"){
+      ev.preventDefault();
+      const b = p.svg.getBoundingClientRect();
+      const i = idx + (ev.key === "ArrowRight" ? 1 : -1);
+      const ni = Math.max(0, Math.min(SIZES.length-1, i));
+      focusIdx(ni, b.left + xs[ni]*(b.width/p.W), b.top + b.height/2);
+    }
+  });
+
+  svg.insertBefore(sv("title", null,
+    M.short + " against chunk size for " + RUNS.map(r => r.label).join(" and ") +
+    ". Full values in the table at the foot of the page."), svg.firstChild);
+  host.appendChild(svg);
+}
+
+/* ─── figure 2: the grid, as two heatmaps on one scale ─────────────────────── */
+function drawHeatmaps(){
+  const host = document.getElementById("hm");
+  const M = METRIC[state.metric];
+  document.getElementById("hm-sub").textContent =
+    "All 15 configurations per retriever, " + M.short +
+    ", both panels on one shared scale so the colours are comparable across them." +
+    (state.ov === "all" ? "" : " Rows other than " + ovLab(+state.ov) + " are dimmed by the filter, not removed.");
+
+  host.textContent = "";
+  const W = Math.max(280, host.clientWidth || 700);
+  const twoUp = W >= 640;
+  const panelW = twoUp ? (W - 18) / 2 : W;
+  const mL = 44, mR = 6, mT = 20, mB = 30;
+  const rowH = 34, gap = 2;
+  const panelH = mT + rowH*OVS.length + mB;
+  const H = twoUp ? panelH : panelH*2 + 10;
+
+  // shared domain over the valid runs for this metric
+  let lo = 1, hi = 0;
+  RUNS.forEach(r => DATA.rows.filter(x => x.run === r.id).forEach(x => {
+    lo = Math.min(lo, x[M.key]); hi = Math.max(hi, x[M.key]);
+  }));
+  const STEPS = 6;
+  const bucket = v => Math.max(0, Math.min(STEPS-1, Math.floor((v - lo) / ((hi - lo) || 1) * STEPS - 1e-9)));
+
+  const svg = sv("svg",{viewBox:"0 0 "+W+" "+H, width:W, height:H, role:"img"});
+  svg.appendChild(sv("title", null, "Heatmap of " + M.short + " over chunk size and overlap for both retrievers."));
+
+  RUNS.forEach((r, pi) => {
+    const ox = twoUp ? pi*(panelW + 18) : 0;
+    const oy = twoUp ? 0 : pi*(panelH + 10);
+    const g = sv("g",{transform:"translate("+ox+","+oy+")"});
+    g.appendChild(sv("text",{x:mL, y:12, fill:"var(--ink)", "font-size":12, "font-weight":600}, r.label));
+    const cw = (panelW - mL - mR) / SIZES.length;
+    const canLabel = cw >= 46;
+
+    OVS.forEach((ov, ri) => {
+      const dim = state.ov !== "all" && Math.abs(ov - +state.ov) > 1e-9;
+      g.appendChild(sv("text",{x:mL-9, y:mT + ri*rowH + rowH/2 + 3.5, "text-anchor":"end",
+        fill:dim ? "var(--dim)" : "var(--ink-3)", "font-size":10.5, "font-family":"var(--font-mono)"}, ovLab(ov)));
+      SIZES.forEach((cs, ci) => {
+        const row = DATA.rows.filter(x => x.run === r.id && x.cs === cs && Math.abs(x.ov - ov) < 1e-9)[0];
+        const v = row[M.key], b = bucket(v);
+        const x = mL + ci*cw, y = mT + ri*rowH;
+        const cell = sv("rect",{x:x + gap/2, y:y + gap/2, width:cw - gap, height:rowH - gap, rx:2,
+          class:"cell q"+b, fill:"var(--q"+b+")", opacity:dim ? 0.3 : 1, tabindex:0, role:"img",
+          "aria-label":r.label + ", " + cs + " tokens, " + ovLab(ov) + " overlap: " +
+            (state.metric === "hit" ? pct(v) : v.toFixed(3))});
+        g.appendChild(cell);
+        if(canLabel){
+          g.appendChild(sv("text",{x:x + cw/2, y:y + rowH/2 + 3.8, "text-anchor":"middle",
+            fill:"var(--q"+b+"-on)", opacity:dim ? 0.4 : 1, "font-size":11,
+            "font-family":"var(--font-mono)", "font-variant-numeric":"tabular-nums", "pointer-events":"none",
+            "font-weight":500}, state.metric === "hit" ? (v*100).toFixed(1) : v.toFixed(3)));
+        }
+        const ci2 = wilson(v, N);
+        bindTip(cell, () => ({
+          title:r.label + " · " + cs + " tok · " + ovLab(ov) + " overlap",
+          rows:[
+            {label:M.short, value:state.metric === "hit" ? pct(v) : v.toFixed(3), color:r.color},
+            {label:"95% CI", value:(ci2[0]*100).toFixed(1) + "–" + (ci2[1]*100).toFixed(1) + "%"},
+            {label:"chunks/doc", value:row.cpd.toFixed(3)},
+            {label:"index size", value:row.tc + " chunks"}
+          ],
+          note:dim ? "Dimmed by the overlap filter." : null
+        }));
+      });
+    });
+    SIZES.forEach((cs, ci) => {
+      g.appendChild(sv("text",{x:mL + ci*cw + cw/2, y:mT + rowH*OVS.length + 15, "text-anchor":"middle",
+        fill:"var(--ink-3)", "font-size":10.5, "font-family":"var(--font-mono)"}, cs));
+    });
+    g.appendChild(sv("text",{x:mL, y:mT + rowH*OVS.length + 28, fill:"var(--ink-3)", "font-size":9.5,
+      "font-family":"var(--font-mono)", "letter-spacing":"0.07em"}, "chunk size (tokens)"));
+    svg.appendChild(g);
+  });
+  host.appendChild(svg);
+
+  const sb = document.getElementById("hm-scale");
+  sb.textContent = "";
+  sb.appendChild(he("span", null, state.metric === "hit" ? pct(lo) : lo.toFixed(3)));
+  const ramp = he("span","ramp");
+  for(let i = 0; i < STEPS; i++){
+    const s = he("i");
+    s.style.background = "var(--q"+i+")";
+    ramp.appendChild(s);
+  }
+  sb.appendChild(ramp);
+  sb.appendChild(he("span", null, state.metric === "hit" ? pct(hi) : hi.toFixed(3)));
+  sb.appendChild(he("span", null, "· " + M.short + ", shared across both panels"));
+}
+
+/* ─── figure 3: the delta, two panels, diverging ───────────────────────────── */
+function drawDelta(){
+  const host = document.getElementById("delta");
+  host.textContent = "";
+  const W = Math.max(280, host.clientWidth || 700);
+  const twoUp = W >= 620;
+  const panelW = twoUp ? (W - 20) / 2 : W;
+  const mL = 52, mR = 46, mT = 24, mB = 26;
+  const rowH = 30, barH = 16;
+  const panelH = mT + rowH*SIZES.length + mB;
+  const H = twoUp ? panelH : panelH*2 + 12;
+
+  const panels = [
+    {key:"hit", title:"Δ Hit Rate@3"},
+    {key:"mrr", title:"Δ MRR@3"}
+  ];
+  // one symmetric scale across both panels, with headroom for the tip labels
+  let amax = 0;
+  panels.forEach(pn => SIZES.forEach(cs => {
+    const d = (mean(allRowsFor("emb", cs, pn.key)) - mean(allRowsFor("tfidf", cs, pn.key))) * 100;
+    amax = Math.max(amax, Math.abs(d));
+  }));
+  amax = Math.ceil(amax) + 1;
+
+  const svg = sv("svg",{viewBox:"0 0 "+W+" "+H, width:W, height:H, role:"img"});
+  svg.appendChild(sv("title", null,
+    "Embeddings minus TF-IDF in percentage points, for Hit Rate@3 and MRR@3, by chunk size."));
+
+  panels.forEach((pn, pi) => {
+    const ox = twoUp ? pi*(panelW + 20) : 0;
+    const oy = twoUp ? 0 : pi*(panelH + 12);
+    const g = sv("g",{transform:"translate("+ox+","+oy+")"});
+    g.appendChild(sv("text",{x:mL, y:11, fill:"var(--ink)", "font-size":12, "font-weight":600}, pn.title));
+    const innerW = panelW - mL - mR;
+    const zx = mL + innerW/2;
+    const sx = v => zx + (v/amax) * (innerW/2);
+
+    // zero rule
+    g.appendChild(sv("line",{x1:zx, x2:zx, y1:mT-4, y2:mT + rowH*SIZES.length, stroke:"var(--axis)", "stroke-width":1}));
+    [-amax, 0, amax].forEach(t2 => {
+      g.appendChild(sv("text",{x:sx(t2), y:mT + rowH*SIZES.length + 15, "text-anchor":"middle",
+        fill:"var(--ink-3)", "font-size":10, "font-family":"var(--font-mono)"},
+        (t2 > 0 ? "+" : t2 < 0 ? "−" : "") + Math.abs(t2) + (t2 === 0 ? "" : "pp")));
+    });
+
+    SIZES.forEach((cs, ri) => {
+      const e = mean(allRowsFor("emb", cs, pn.key)), f = mean(allRowsFor("tfidf", cs, pn.key));
+      const d = (e - f) * 100;
+      const y = mT + ri*rowH + (rowH - barH)/2;
+      g.appendChild(sv("text",{x:mL-10, y:y + barH/2 + 3.5, "text-anchor":"end", fill:"var(--ink-3)",
+        "font-size":10.5, "font-family":"var(--font-mono)", "font-variant-numeric":"tabular-nums"}, cs));
+      const w = Math.abs(sx(d) - zx);
+      const pos = d >= 0;
+      const bar = sv("path",{
+        d:barPath(pos ? zx : zx - w, y, Math.max(w, 1.5), barH, 4, pos ? "right" : "left"),
+        fill:pos ? "var(--pole-pos)" : "var(--pole-neg)", class:"bar", tabindex:0, role:"img",
+        "aria-label":pn.title + " at " + cs + " tokens: " + pp(d)});
+      g.appendChild(bar);
+      g.appendChild(sv("text",{x:pos ? zx + w + 7 : zx - w - 7, y:y + barH/2 + 3.8,
+        "text-anchor":pos ? "start" : "end", fill:"var(--ink)", "font-size":10.5, "font-weight":600,
+        "font-family":"var(--font-mono)", "font-variant-numeric":"tabular-nums", "pointer-events":"none"}, pp(d)));
+      bindTip(bar, () => ({
+        title:cs + " tokens · " + pn.title,
+        rows:[
+          {label:"Embeddings", value:pn.key === "hit" ? pct(e) : e.toFixed(3), color:"var(--s2)"},
+          {label:"TF-IDF", value:pn.key === "hit" ? pct(f) : f.toFixed(3), color:"var(--s1)"},
+          {label:"difference", value:pp(d)}
+        ],
+        note:"Mean of the three overlap settings. The 95% interval at n=200 is wider than this difference."
+      }));
+    });
+    svg.appendChild(g);
+  });
+  host.appendChild(svg);
+}
+
+/* ─── figure 4: chunks per document ────────────────────────────────────────── */
+function drawCpd(){
+  const host = document.getElementById("cpd");
+  legendInto(document.getElementById("cpd-legend"), RUNS.map(r => ({label:r.label, color:r.color})));
+  host.textContent = "";
+  const p = frame(host, 250, {t:16, r:12, b:44, l:38});
+  const svg = p.svg;
+  const dom = [0, 2.5];
+  const ticks = [0, 0.5, 1, 1.5, 2, 2.5];
+  yAxis(svg, p, dom, ticks, t => t.toFixed(1));
+
+  const bandW = (p.W - p.m.l - p.m.r) / SIZES.length;
+  const barW = Math.min(24, (bandW - 10) / 2 - 1);
+
+  // reference line at one chunk per document
+  const y1 = p.scaleY(1, dom);
+  svg.appendChild(sv("line",{x1:p.m.l, x2:p.W-p.m.r, y1:y1, y2:y1, stroke:"var(--warning)", "stroke-width":1.5}));
+  svg.appendChild(sv("text",{x:p.W-p.m.r-2, y:y1-6, "text-anchor":"end", fill:"var(--ink-2)", "font-size":10,
+    "font-family":"var(--font-mono)"}, "1.000 — one chunk per doc"));
+
+  SIZES.forEach((cs, i) => {
+    const cx = p.m.l + bandW*i + bandW/2;
+    RUNS.forEach((r, j) => {
+      const v = mean(allRowsFor(r.id, cs, "cpd"));
+      const x = cx - barW - 1 + j*(barW + 2);
+      const yy = p.scaleY(v, dom), h = p.y0 - yy;
+      const bar = sv("path",{d:barPath(x, yy, barW, h, 4, "up"), fill:r.color, class:"bar", tabindex:0,
+        role:"img", "aria-label":r.label + " at " + cs + " tokens: " + v.toFixed(3) + " chunks per document"});
+      svg.appendChild(bar);
+      if(i === 0 && v === Math.max.apply(null, RUNS.map(q => mean(allRowsFor(q.id, cs, "cpd"))))){
+        svg.appendChild(sv("text",{x:x + barW/2, y:yy - 7, "text-anchor":"middle", fill:"var(--ink)",
+          "font-size":10, "font-weight":600, "font-family":"var(--font-mono)",
+          "font-variant-numeric":"tabular-nums", "pointer-events":"none"}, v.toFixed(2)));
+      }
+      bindTip(bar, () => ({
+        title:r.label + " · " + cs + " tokens",
+        rows:[
+          {label:"chunks/doc", value:v.toFixed(3), color:r.color},
+          {label:"index size", value:Math.round(mean(allRowsFor(r.id, cs, "tc"))) + " chunks"}
+        ],
+        note:v <= 1.0001
+          ? "At 1.000 the splitter returns the document whole, so chunk size has nothing left to change."
+          : "Mean of the three overlap settings."
+      }));
+    });
+  });
+  xTicks(svg, p, SIZES.map(String), SIZES.map((_, i) => p.m.l + bandW*i + bandW/2), "chunk size (tokens)");
+  svg.insertBefore(sv("title", null, "Average chunks per document against chunk size, both retrievers."), svg.firstChild);
+  host.appendChild(svg);
+}
+
+/* ─── figure 5: latency ────────────────────────────────────────────────────── */
+function drawLatency(){
+  const host = document.getElementById("lat");
+  legendInto(document.getElementById("lat-legend"),
+    RUNS.map(r => ({label:r.label + " mean", color:r.color, shape:"line"}))
+      .concat([{label:"mean → p95", color:"var(--dim)"}]));
+  host.textContent = "";
+  const p = frame(host, 250, {t:16, r:40, b:44, l:42});
+  const svg = p.svg;
+  let hi = 0;
+  RUNS.forEach(r => SIZES.forEach(cs => { hi = Math.max(hi, mean(allRowsFor(r.id, cs, "p95"))); }));
+  const dom = [0, Math.ceil(hi*2)/2];
+  const ticks = []; for(let t = 0; t <= dom[1] + 1e-9; t += 0.5) ticks.push(+t.toFixed(2));
+  yAxis(svg, p, dom, ticks, t => t.toFixed(1));
+
+  const xs = SIZES.map((_, i) => p.x(i/(SIZES.length-1)));
+  RUNS.forEach(r => {
+    const av = SIZES.map(cs => mean(allRowsFor(r.id, cs, "lat")));
+    const p9 = SIZES.map(cs => mean(allRowsFor(r.id, cs, "p95")));
+    const up = xs.map((x, i) => [x, p.scaleY(p9[i], dom)]);
+    const dn = xs.map((x, i) => [x, p.scaleY(av[i], dom)]).reverse();
+    svg.appendChild(sv("path",{d:"M"+up.map(q => q[0]+" "+q[1]).join("L")+"L"+dn.map(q => q[0]+" "+q[1]).join("L")+"Z",
+      fill:r.color, opacity:0.10}));
+    const pts = xs.map((x, i) => [x, p.scaleY(av[i], dom)]);
+    svg.appendChild(sv("path",{d:"M"+pts.map(q => q[0]+" "+q[1]).join("L"), fill:"none", stroke:r.color,
+      "stroke-width":2, "stroke-linejoin":"round", "stroke-linecap":"round"}));
+    pts.forEach(q => svg.appendChild(sv("circle",{cx:q[0], cy:q[1], r:4, fill:r.color,
+      stroke:"var(--surface-1)", "stroke-width":2})));
+    svg.appendChild(sv("text",{x:pts[pts.length-1][0]+9, y:pts[pts.length-1][1]+3.5, fill:"var(--ink)",
+      "font-size":10.5, "font-weight":600, "font-family":"var(--font-mono)",
+      "font-variant-numeric":"tabular-nums"}, av[av.length-1].toFixed(2)));
+  });
+  xTicks(svg, p, SIZES.map(String), xs, "chunk size (tokens)");
+
+  const cross = sv("line",{x1:0, x2:0, y1:p.m.t, y2:p.y0, stroke:"var(--ink-3)", "stroke-width":1, opacity:0});
+  svg.appendChild(cross);
+  const hit = sv("rect",{x:p.m.l, y:p.m.t, width:(p.W-p.m.r)-p.m.l, height:p.H-p.m.t-p.m.b, class:"hit",
+    tabindex:0, "aria-label":"Query latency by chunk size. Arrow keys step through chunk sizes."});
+  svg.appendChild(hit);
+  let idx = 0;
+  function focusIdx(i, cx, cy){
+    idx = Math.max(0, Math.min(SIZES.length-1, i));
+    cross.setAttribute("x1", xs[idx]); cross.setAttribute("x2", xs[idx]); cross.setAttribute("opacity", 1);
+    const cs = SIZES[idx];
+    showTip({title:cs + " tokens · latency per query",
+      rows:RUNS.map(r => ({color:r.color, shape:"line", label:r.label,
+        value:mean(allRowsFor(r.id, cs, "lat")).toFixed(2) + " / " + mean(allRowsFor(r.id, cs, "p95")).toFixed(2) + " ms"}))
+      , note:"mean / p95"}, cx, cy);
+  }
+  hit.addEventListener("pointermove", ev => {
+    const r = p.svg.getBoundingClientRect();
+    const sxp = (ev.clientX - r.left) * (p.W / r.width);
+    let best = 0, bd = Infinity;
+    xs.forEach((x, i) => { const d = Math.abs(x - sxp); if(d < bd){ bd = d; best = i; } });
+    focusIdx(best, ev.clientX, ev.clientY);
+  });
+  hit.addEventListener("pointerleave", () => { cross.setAttribute("opacity", 0); hideTip(); });
+  hit.addEventListener("focus", () => focusIdx(idx));
+  hit.addEventListener("blur", () => { cross.setAttribute("opacity", 0); hideTip(); });
+  hit.addEventListener("keydown", ev => {
+    if(ev.key === "ArrowRight" || ev.key === "ArrowLeft"){
+      ev.preventDefault();
+      const b = p.svg.getBoundingClientRect();
+      const ni = Math.max(0, Math.min(SIZES.length-1, idx + (ev.key === "ArrowRight" ? 1 : -1)));
+      focusIdx(ni, b.left + xs[ni]*(b.width/p.W), b.top + b.height/2);
+    }
+  });
+  svg.insertBefore(sv("title", null, "Mean query latency with the span out to p95, against chunk size."), svg.firstChild);
+  host.appendChild(svg);
+}
+
+/* ─── headline figures ─────────────────────────────────────────────────────── */
+function drawHeadline(){
+  const M = METRIC[state.metric];
+  const bEmb = bestOf("emb", M.key), bTf = bestOf("tfidf", M.key);
+  const champ = bEmb[M.key] >= bTf[M.key] ? bEmb : bTf;
+  const champRun = RUNS.filter(r => r.id === champ.run)[0];
+  const c = wilson(champ[M.key], N);
+
+  document.getElementById("hero-cap").textContent = "Best " + M.short + " of 30 scored runs";
+  document.getElementById("hero-fig").textContent = state.metric === "hit" ? pct(champ[M.key]) : champ[M.key].toFixed(3);
+  document.getElementById("hero-band").textContent =
+    "95% CI " + (c[0]*100).toFixed(1) + " – " + (c[1]*100).toFixed(1) + "%  (±" + ((c[1]-c[0])/2*100).toFixed(1) + "pp)";
+  const cfg = document.getElementById("hero-cfg");
+  cfg.textContent = "";
+  cfg.appendChild(document.createTextNode(champRun.label + " at "));
+  const b1 = he("b", null, champ.cs + " tokens");
+  cfg.appendChild(b1);
+  cfg.appendChild(document.createTextNode(", "));
+  cfg.appendChild(he("b", null, ovLab(champ.ov) + " overlap"));
+  cfg.appendChild(document.createTextNode(state.ov === "all" ? "" : " · overlap filter active"));
+
+  // largest absolute difference by chunk size, averaged over overlap
+  let bigCs = SIZES[0], bigD = 0;
+  SIZES.forEach(cs => {
+    const d = (mean(allRowsFor("emb", cs, M.key)) - mean(allRowsFor("tfidf", cs, M.key))) * 100;
+    if(Math.abs(d) > Math.abs(bigD)){ bigD = d; bigCs = cs; }
+  });
+  const tiles = [
+    {lab:"Best TF-IDF", color:"var(--s1)",
+     val:state.metric === "hit" ? pct(bTf[M.key]) : bTf[M.key].toFixed(3),
+     sub:bTf.cs + " tok · " + ovLab(bTf.ov) + " overlap\nbigrams + cosine"},
+    {lab:"Best embeddings", color:"var(--s2)",
+     val:state.metric === "hit" ? pct(bEmb[M.key]) : bEmb[M.key].toFixed(3),
+     sub:bEmb.cs + " tok · " + ovLab(bEmb.ov) + " overlap\nall-MiniLM-L6-v2"},
+    {lab:"Widest gap", color:null, val:pp(bigD),
+     sub:"at " + bigCs + " tok · embeddings − TF-IDF\nintervals still overlap"}
+  ];
+  const host = document.getElementById("tiles");
+  host.textContent = "";
+  tiles.forEach(t => {
+    const d = he("div","tile");
+    const lab = he("div","lab");
+    if(t.color){ const k = he("span","key"); k.style.background = t.color; lab.appendChild(k); }
+    lab.appendChild(he("span", null, t.lab));
+    d.appendChild(lab);
+    d.appendChild(he("div","val",t.val));
+    const sub = he("div","sub");
+    t.sub.split("\n").forEach((ln, i) => {
+      if(i) sub.appendChild(document.createElement("br"));
+      sub.appendChild(document.createTextNode(ln));
+    });
+    d.appendChild(sub);
+    host.appendChild(d);
+  });
+}
+
+/* ─── the table view ───────────────────────────────────────────────────────── */
+const COLS = [
+  {k:"run",  t:"Run",          kind:"k"},
+  {k:"cs",   t:"Chunk (tok)"},
+  {k:"ov",   t:"Overlap"},
+  {k:"ovt",  t:"Ov (tok)"},
+  {k:"hit",  t:"Hit Rate@3"},
+  {k:"mrr",  t:"MRR@3"},
+  {k:"ci",   t:"95% CI"},
+  {k:"cpd",  t:"Chunks/doc"},
+  {k:"tc",   t:"Index"},
+  {k:"lat",  t:"Mean (ms)"},
+  {k:"p95",  t:"p95 (ms)"},
+  {k:"build",t:"Build (s)"}
+];
+function drawTable(){
+  const hr = document.getElementById("thead-row");
+  hr.textContent = "";
+  COLS.forEach(c => {
+    const th = he("th", null, null);
+    th.appendChild(document.createTextNode(c.t));
+    if(c.k !== "ci"){
+      th.tabIndex = 0;
+      if(state.sortKey === c.k){
+        th.setAttribute("aria-sort", state.sortDir > 0 ? "ascending" : "descending");
+        th.appendChild(he("span","arrow"," " + (state.sortDir > 0 ? "▲" : "▼")));
+      }
+      const go = () => {
+        if(state.sortKey === c.k) state.sortDir *= -1;
+        else { state.sortKey = c.k; state.sortDir = 1; }
+        drawTable();
+      };
+      th.addEventListener("click", go);
+      th.addEventListener("keydown", ev => { if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); go(); } });
+    }else{ th.style.cursor = "default"; }
+    hr.appendChild(th);
+  });
+
+  const M = METRIC[state.metric];
+  let rows = DATA.rows.filter(r => state.ov === "all" || Math.abs(r.ov - +state.ov) < 1e-9);
+  const order = {tfidf:0, emb:1, v1:2};
+  rows = rows.slice().sort((a, b) => {
+    const k = state.sortKey;
+    let va = k === "run" ? order[a.run] : a[k], vb = k === "run" ? order[b.run] : b[k];
+    if(va === vb){ return (a.cs - b.cs) || (a.ov - b.ov); }
+    return (va > vb ? 1 : -1) * state.sortDir;
+  });
+
+  const champ = (function(){
+    const valid = rows.filter(r => r.run !== "v1");
+    return valid.length ? valid.reduce((x, y) => (y[M.key] > x[M.key] ? y : x)) : null;
+  })();
+
+  const tb = document.getElementById("tbody");
+  tb.textContent = "";
+  rows.forEach(r => {
+    const sup = r.run === "v1";
+    const tr = he("tr", (sup ? "sup " : "") + (champ === r ? "best" : ""));
+    const c = wilson(r[M.key], N);
+    COLS.forEach(col => {
+      const td = he("td", col.kind === "k" ? "k" : null);
+      if(col.k === "run"){
+        const w = he("span","runpill");
+        const k = he("span","key");
+        k.style.background = sup ? "var(--dim)" : (r.run === "emb" ? "var(--s2)" : "var(--s1)");
+        w.appendChild(k);
+        w.appendChild(he("span", sup ? "strike" : null, DATA.meta.runs[r.run].label));
+        td.appendChild(w);
+      } else if(col.k === "ov"){ td.textContent = ovLab(r.ov);
+      } else if(col.k === "hit"){ td.textContent = r.hit.toFixed(3);
+      } else if(col.k === "mrr"){ td.textContent = r.mrr.toFixed(4);
+      } else if(col.k === "ci"){ td.textContent = sup ? "—" : (c[0]*100).toFixed(1) + "–" + (c[1]*100).toFixed(1);
+      } else if(col.k === "cpd"){ td.textContent = r.cpd.toFixed(3);
+      } else if(col.k === "lat" || col.k === "p95"){ td.textContent = r[col.k].toFixed(2);
+      } else if(col.k === "build"){ td.textContent = r.build.toFixed(3);
+      } else { td.textContent = r[col.k]; }
+      tr.appendChild(td);
+    });
+    tb.appendChild(tr);
+  });
+  document.getElementById("tfoot").textContent =
+    rows.length + " rows shown" +
+    (state.ov === "all" ? " (all overlaps)" : " at " + ovLab(+state.ov) + " overlap") +
+    " · the 95% CI column is a Wilson interval on the selected metric (" + M.short + ") at n=" + N +
+    " · struck-through rows are the superseded run and are charted nowhere" +
+    " · the highlighted row is the best " + M.short + " on screen.";
+}
+
+/* ─── wiring ───────────────────────────────────────────────────────────────── */
+function renderAll(){
+  drawHeadline();
+  drawQuality();
+  drawHeatmaps();
+  drawDelta();
+  drawCpd();
+  drawLatency();
+  drawTable();
+}
+document.querySelectorAll("[data-metric]").forEach(b => b.addEventListener("click", () => {
+  state.metric = b.dataset.metric;
+  document.querySelectorAll("[data-metric]").forEach(o => o.setAttribute("aria-pressed", String(o === b)));
+  persist(); hideTip(); renderAll();
+}));
+document.querySelectorAll("[data-ov]").forEach(b => b.addEventListener("click", () => {
+  state.ov = b.dataset.ov;
+  document.querySelectorAll("[data-ov]").forEach(o => o.setAttribute("aria-pressed", String(o === b)));
+  persist(); hideTip(); renderAll();
+}));
+const ciBox = document.getElementById("ci-toggle");
+ciBox.checked = state.ci;
+ciBox.addEventListener("change", () => { state.ci = ciBox.checked; persist(); hideTip(); drawQuality(); });
+document.querySelectorAll("[data-metric]").forEach(o => o.setAttribute("aria-pressed", String(o.dataset.metric === state.metric)));
+document.querySelectorAll("[data-ov]").forEach(o => o.setAttribute("aria-pressed", String(o.dataset.ov === state.ov)));
+
+let rt;
+addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { hideTip(); renderAll(); }, 140); });
+renderAll();
+})();
+</script>

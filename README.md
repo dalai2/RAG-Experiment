@@ -2,6 +2,8 @@
 
 Measures how `chunk_size` and `overlap` affect **retrieval quality** using standard IR metrics. No LLM generation, no API keys, $0 cost.
 
+📊 **Interactive Dashboard:** [https://dalai2.github.io/RAG-Experiment/](https://dalai2.github.io/RAG-Experiment/)
+
 ## Metrics
 
 | Metric | Definition |
