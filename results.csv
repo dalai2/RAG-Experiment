@@ -1,0 +1,16 @@
+chunk_size,overlap_ratio,overlap_tokens,hit_rate,mrr,avg_latency_s,p95_latency_s,avg_chunks_per_doc,total_chunks,build_time_s,n_samples,top_k,retrieval_method
+128,0.0,0,0.89,0.89,0.0023,0.0031,3.31,662,0.06,200,3,TF-IDF bigrams + cosine
+128,0.1,12,0.905,0.905,0.0022,0.0028,3.31,662,0.06,200,3,TF-IDF bigrams + cosine
+128,0.2,25,0.925,0.925,0.0025,0.0033,3.69,738,0.06,200,3,TF-IDF bigrams + cosine
+256,0.0,0,0.925,0.925,0.0024,0.0032,2.0,400,0.06,200,3,TF-IDF bigrams + cosine
+256,0.1,25,0.91,0.91,0.0024,0.0031,2.0,400,0.06,200,3,TF-IDF bigrams + cosine
+256,0.2,51,0.91,0.91,0.0023,0.0029,2.0,400,0.06,200,3,TF-IDF bigrams + cosine
+512,0.0,0,1.0,1.0,0.0022,0.003,1.0,200,0.05,200,3,TF-IDF bigrams + cosine
+512,0.1,51,1.0,1.0,0.0021,0.0028,1.0,200,0.05,200,3,TF-IDF bigrams + cosine
+512,0.2,102,1.0,1.0,0.0021,0.0027,1.0,200,0.05,200,3,TF-IDF bigrams + cosine
+1024,0.0,0,1.0,1.0,0.002,0.0027,1.0,200,0.05,200,3,TF-IDF bigrams + cosine
+1024,0.1,102,1.0,1.0,0.002,0.0025,1.0,200,0.05,200,3,TF-IDF bigrams + cosine
+1024,0.2,204,1.0,1.0,0.0021,0.0027,1.0,200,0.05,200,3,TF-IDF bigrams + cosine
+2048,0.0,0,1.0,1.0,0.0021,0.0027,1.0,200,0.05,200,3,TF-IDF bigrams + cosine
+2048,0.1,204,1.0,1.0,0.0022,0.0028,1.0,200,0.06,200,3,TF-IDF bigrams + cosine
+2048,0.2,409,1.0,1.0,0.002,0.0026,1.0,200,0.05,200,3,TF-IDF bigrams + cosine
